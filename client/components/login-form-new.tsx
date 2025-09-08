@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 export function LoginForm() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const { login, isLoading, user } = useAuth()
+  const { login, isLoading } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,27 +23,18 @@ export function LoginForm() {
       return
     }
 
-    console.log('Attempting login with:', { username, role: 'unknown' })
-    const result = await login({ username, password })
+    const success = await login({ username, password })
     
-    if (result.success && result.user) {
-      console.log('Login successful, user data:', result.user)
-      
-      // Debug alert to see what we get
-      alert(`Login successful! User: ${result.user.username}, Role: ${result.user.role}`)
+    if (success) {
+      // Get user role from context after successful login
+      const userData = JSON.parse(localStorage.getItem('user') || '{}')
       
       // Redirect based on role
-      if (result.user.role === "admin") {
-        console.log('Redirecting to admin panel')
+      if (userData.role === "admin") {
         router.push("/admin")
       } else {
-        // All non-admin users (hr, manager, employee) go to chat
-        console.log('Redirecting to chat page, user role:', result.user.role)
         router.push("/chat")
       }
-    } else {
-      console.log('Login failed')
-      alert('Login failed!')
     }
   }
 

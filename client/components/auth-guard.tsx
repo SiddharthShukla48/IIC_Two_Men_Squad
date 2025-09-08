@@ -2,41 +2,30 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-
-interface User {
-  email: string
-  role: "employee" | "manager" | "admin" | "HR"
-}
+import { useAuth } from "@/lib/auth-context"
 
 interface AuthGuardProps {
   children: React.ReactNode
-  allowedRoles?: ("employee" | "manager" | "admin" | "HR")[]
+  allowedRoles?: ("employee" | "manager" | "hr" | "admin")[]
 }
 
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-
-      // Check if user has required role
-      if (allowedRoles && !allowedRoles.includes(parsedUser.role)) {
-        router.push("/")
-        return
-      }
-    } else {
+    if (!isLoading && !user) {
       router.push("/")
       return
     }
-    setIsLoading(false)
-  }, [router, allowedRoles])
+
+    if (user && allowedRoles && !allowedRoles.includes(user.role)) {
+      router.push("/")
+      return
+    }
+  }, [user, isLoading, router, allowedRoles])
 
   if (isLoading) {
     return (
@@ -56,21 +45,5 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   return <>{children}</>
 }
 
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
-  const logout = () => {
-    localStorage.removeItem("user")
-    setUser(null)
-    window.location.href = "/"
-  }
-
-  return { user, logout }
-}
+// Export useAuth for backward compatibility
+export { useAuth } from "@/lib/auth-context"
