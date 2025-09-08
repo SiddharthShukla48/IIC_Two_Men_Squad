@@ -151,6 +151,43 @@ class ApiClient {
   async healthCheck(): Promise<{ status: string }> {
     return this.makeRequest<{ status: string }>('/health')
   }
+
+  // Multi-Agent RAG Chat endpoints
+  async multiAgentChat(message: string, sessionId?: string): Promise<{
+    response: string
+    session_id: string
+    agent_used?: string
+    query_analysis?: any
+  }> {
+    return this.makeRequest('/api/chat/multi-agent', {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        session_id: sessionId
+      })
+    })
+  }
+
+  async getChatHistory(sessionId: string): Promise<{
+    session_id: string
+    history: any[]
+  }> {
+    return this.makeRequest(`/api/chat/sessions/${sessionId}/history`)
+  }
+
+  async clearChatSession(sessionId: string): Promise<{ message: string }> {
+    return this.makeRequest(`/api/chat/sessions/${sessionId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async chatHealthCheck(): Promise<{
+    status: string
+    multi_agent_rag: string
+    test_response_length: number
+  }> {
+    return this.makeRequest('/api/chat/health')
+  }
 }
 
 export const apiClient = new ApiClient()

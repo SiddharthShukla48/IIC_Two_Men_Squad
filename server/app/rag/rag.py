@@ -9,17 +9,16 @@ import PyPDF2
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
-# Vector database
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
-from qdrant_client.http.models import Distance, VectorParams
+# CrewAI RAG imports
+from crewai.rag.config.utils import set_rag_config, get_rag_client, clear_rag_config
+from crewai.rag.chromadb.config import ChromaDBConfig
 
 # Embeddings
 from langchain_community.embeddings import OllamaEmbeddings
 
 # CrewAI
 from crewai import Agent, Task, Crew
-from crewai_tools import BaseTool
+from langchain_core.tools import BaseTool
 
 # Ollama
 from langchain_community.llms import Ollama
@@ -29,76 +28,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class QdrantVectorStore:
-    """Handles Qdrant vector database operations"""
-    
-    def __init__(self, host: str = "localhost", port: int = 6333, collection_name: str = "documents"):
-        self.client = QdrantClient(host=host, port=port)
-        self.collection_name = collection_name
-        self.embedding_dim = 384  # Default for all-MiniLM-L6-v2
-        self._ensure_collection_exists()
-    
-    def _ensure_collection_exists(self):
-        """Create collection if it doesn't exist"""
-        try:
-            collections = self.client.get_collections().collections
-            if not any(col.name == self.collection_name for col in collections):
-                self.client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=self.embedding_dim,
-                        distance=Distance.COSINE
-                    )
-                )
-                logger.info(f"Created collection: {self.collection_name}")
-        except Exception as e:
-            logger.error(f"Error creating collection: {e}")
-    
-    def add_documents(self, documents: List[Document], embeddings: List[List[float]]):
-        """Add documents with embeddings to Qdrant"""
-        points = []
-        for i, (doc, embedding) in enumerate(zip(documents, embeddings)):
-            point = models.PointStruct(
-                id=str(uuid.uuid4()),
-                vector=embedding,
-                payload={
-                    "content": doc.page_content,
-                    "metadata": doc.metadata,
-                    "timestamp": datetime.now().isoformat()
-                }
-            )
-            points.append(point)
-        
-        self.client.upsert(
-            collection_name=self.collection_name,
-            points=points
-        )
-        logger.info(f"Added {len(points)} documents to Qdrant")
-    
-    def search(self, query_embedding: List[float], limit: int = 5) -> List[Dict]:
-        """Search for similar documents"""
-        search_result = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_embedding,
-            limit=limit
-        )
-        return [
-            {
-                "content": hit.payload["content"],
-                "metadata": hit.payload["metadata"],
-                "score": hit.score
-            }
-            for hit in search_result
-        ]
-
-
 class PDFProcessor:
-    """Handles PDF processing and text extraction"""
+    """Handles PDF document processing and text extraction"""
     
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+    def __init__(self):
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+        )
         )
     
     def extract_text_from_pdf(self, pdf_path: str) -> str:
@@ -170,14 +108,14 @@ class VectorSearchTool(BaseTool):
     
     def __init__(self, vector_store: QdrantVectorStore, embeddings: OllamaEmbeddings):
         super().__init__()
-        self.vector_store = vector_store
-        self.embeddings = embeddings
+        self._vector_store = vector_store
+        self._embeddings = embeddings
     
     def _run(self, query: str) -> str:
         """Execute vector search"""
         try:
-            query_embedding = self.embeddings.embed_query(query)
-            results = self.vector_store.search(query_embedding, limit=3)
+            query_embedding = self._embeddings.embed_query(query)
+            results = self._vector_store.search(query_embedding, limit=3)
             
             if not results:
                 return "No relevant information found in the document database."
@@ -215,6 +153,9 @@ class RAGChatbot:
     
     def _setup_crew(self):
         """Setup CrewAI agent and crew"""
+        # CrewAI expects model format like "ollama/model_name"
+        crewai_model = f"ollama/{self.llm.model}"
+        
         self.agent = Agent(
             role="Document Assistant",
             goal="Help users find information from uploaded documents and maintain conversational context",
@@ -223,7 +164,7 @@ class RAGChatbot:
                         context and provide accurate, helpful responses based on the available 
                         document content.""",
             tools=[self.vector_tool],
-            llm=self.llm,
+            llm=crewai_model,
             verbose=True
         )
         

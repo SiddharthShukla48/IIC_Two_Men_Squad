@@ -8,13 +8,17 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth-guard"
 import { Navigation } from "@/components/navigation"
+import { MessageContent } from "@/components/message-content"
 import { Send, Bot, User } from "lucide-react"
+import { apiClient } from "@/lib/api"
+import { formatMultiAgentResponse, isDebuggingResponse, getDebugFallbackMessage } from "@/lib/message-formatter"
 
 interface Message {
   id: string
   content: string
   sender: "user" | "bot"
   timestamp: Date
+  agentUsed?: string
 }
 
 export function ChatInterface() {
@@ -22,13 +26,15 @@ export function ChatInterface() {
     {
       id: "1",
       content:
-        "Hello! I'm your HR Assistant. I can help you with employee information, policies, benefits, and more. What would you like to know?",
+        "Hello! I'm your **Multi-Agent HR Assistant**. I can help you with:\n\n• **Employee & Project Information** - Find details about team members, project assignments, and departmental data\n• **Company Policies** - Access information about HR policies, procedures, and guidelines\n• **Organizational Structure** - Learn about company structure, roles, and organizational information\n\nWhat would you like to know today?",
       sender: "bot",
       timestamp: new Date(),
+      agentUsed: "Welcome Assistant"
     },
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string>("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
 
@@ -40,54 +46,9 @@ export function ChatInterface() {
     scrollToBottom()
   }, [messages])
 
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase()
-
-    // Role-based responses
-    if (user?.role === "manager" && (lowerMessage.includes("team") || lowerMessage.includes("report"))) {
-      return "As a manager, you have access to team reports in the manager dashboard. You can view team performance metrics, approve leave requests, and access employee development plans. Would you like me to guide you through any specific management tasks?"
-    }
-
-    if (user?.role === "admin" && (lowerMessage.includes("system") || lowerMessage.includes("database"))) {
-      return "As an administrator, you have full system access. You can manage users, update the knowledge base, and configure system settings through the admin panel. Is there a specific administrative task you need help with?"
-    }
-
-    // Mock responses based on common HR queries
-    if (lowerMessage.includes("leave") || lowerMessage.includes("vacation")) {
-      return "You have 15 vacation days remaining this year. To request leave, please submit a request through the employee portal at least 2 weeks in advance. Sick leave is separate and doesn't count against your vacation days."
-    }
-
-    if (lowerMessage.includes("benefits") || lowerMessage.includes("insurance")) {
-      return "Our benefits package includes: Health insurance (80% company coverage), Dental and Vision coverage, 401(k) with 4% company match, Life insurance, and Flexible Spending Account. Open enrollment is in November each year."
-    }
-
-    if (lowerMessage.includes("salary") || lowerMessage.includes("pay") || lowerMessage.includes("payroll")) {
-      return "Payroll is processed bi-weekly on Fridays. Your next pay date is visible in the employee portal. For salary discussions or questions about your compensation, please schedule a meeting with your manager or HR representative."
-    }
-
-    if (lowerMessage.includes("policy") || lowerMessage.includes("handbook")) {
-      return "The employee handbook is available in the company portal under 'Resources'. It covers all company policies including code of conduct, remote work guidelines, and disciplinary procedures. Please review it regularly as policies may be updated."
-    }
-
-    if (lowerMessage.includes("training") || lowerMessage.includes("development")) {
-      return "We offer various professional development opportunities including online courses through LinkedIn Learning, conference attendance budget ($1,500/year), and internal mentorship programs. Speak with your manager about creating a development plan."
-    }
-
-    if (lowerMessage.includes("contact") || lowerMessage.includes("hr")) {
-      return "You can reach HR at hr@company.com or extension 1234. Office hours are Monday-Friday, 9 AM - 5 PM. For urgent matters outside business hours, use the emergency contact line at (555) 123-4567."
-    }
-
-    // Default response
-    return (
-      "I understand you're asking about: " +
-      userMessage +
-      ". For specific information not covered in my knowledge base, please contact HR directly at hr@company.com or schedule a meeting through the employee portal."
-    )
-  }
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim()) return
+    if (!inputMessage.trim() || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -97,20 +58,62 @@ export function ChatInterface() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const currentMessage = inputMessage
     setInputMessage("")
     setIsLoading(true)
 
-    // Simulate AI processing time
-    setTimeout(() => {
+    try {
+      // Call the multi-agent RAG API
+      const response = await apiClient.multiAgentChat(currentMessage, sessionId)
+      
+      // Update session ID if it's new
+      if (response.session_id && response.session_id !== sessionId) {
+        setSessionId(response.session_id)
+      }
+
+      // Check if response looks like debugging output and format accordingly
+      let finalContent = response.response;
+      let finalAgent = response.agent_used;
+      
+      if (isDebuggingResponse(response.response)) {
+        // If we detect debugging output, provide a cleaner fallback
+        const queryType = currentMessage.toLowerCase().includes('policy') ? 'policy' :
+                         currentMessage.toLowerCase().includes('employee') || currentMessage.toLowerCase().includes('department') ? 'employee' :
+                         currentMessage.toLowerCase().includes('organization') || currentMessage.toLowerCase().includes('company') ? 'organization' : 'default';
+        
+        finalContent = getDebugFallbackMessage(queryType);
+        finalAgent = 'System Processing';
+      } else {
+        // Format the response for better display
+        const formatted = formatMultiAgentResponse(response.response, response.agent_used);
+        finalContent = formatted.content;
+        finalAgent = formatted.agentUsed || response.agent_used;
+      }
+
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: generateBotResponse(inputMessage),
+        content: finalContent,
+        sender: "bot",
+        timestamp: new Date(),
+        agentUsed: finalAgent,
+      }
+      
+      setMessages((prev) => [...prev, botResponse])
+    } catch (error) {
+      console.error('Chat error:', error)
+      
+      // Fallback error message
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment. If the issue persists, please contact the system administrator.",
         sender: "bot",
         timestamp: new Date(),
       }
-      setMessages((prev) => [...prev, botResponse])
+      
+      setMessages((prev) => [...prev, errorResponse])
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -141,8 +144,17 @@ export function ChatInterface() {
                       : "bg-card text-card-foreground border border-border"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  <p className="text-xs opacity-70 mt-1">{message.timestamp.toLocaleTimeString()}</p>
+                  {message.sender === "user" ? (
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                  ) : (
+                    <MessageContent content={message.content} />
+                  )}
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs opacity-70">{message.timestamp.toLocaleTimeString()}</p>
+                    {message.sender === "bot" && message.agentUsed && (
+                      <p className="text-xs opacity-60 italic">Agent: {message.agentUsed}</p>
+                    )}
+                  </div>
                 </div>
 
                 {message.sender === "user" && (

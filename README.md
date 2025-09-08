@@ -1,6 +1,6 @@
-# IIC AI-Powered Offline Organizational Chatbot
+# IIC Multi-Agent RAG System
 
-A complete solution for an offline organizational chatbot with role-based access control, built with FastAPI backend and Next.js frontend.
+An intelligent HR assistant system powered by multi-agent architecture using FastAPI backend and Next.js frontend.
 
 ## 🏗️ **Architecture Overview**
 
