@@ -3,7 +3,7 @@ import { ChatInterface } from "@/components/chat-interface"
 
 export default function ChatPage() {
   return (
-    <AuthGuard allowedRoles={["employee", "manager", "admin", "HR"]}>
+    <AuthGuard allowedRoles={["employee", "manager", "hr"]}>
       <ChatInterface />
     </AuthGuard>
   )

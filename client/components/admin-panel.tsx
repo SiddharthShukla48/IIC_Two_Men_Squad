@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Navigation } from "@/components/navigation"
+import { UserManagement } from "@/components/user-management"
 import {
   Users,
   Database,
@@ -412,88 +413,7 @@ export function AdminPanel() {
 
           {/* User Management Tab */}
           <TabsContent value="users" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Create User Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    Create New User
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCreateUser} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="user-email">Email</Label>
-                      <Input
-                        id="user-email"
-                        type="email"
-                        placeholder="user@company.com"
-                        value={newUser.email}
-                        onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="user-role">Role</Label>
-                      <Select
-                        value={newUser.role}
-                        onValueChange={(value: "employee" | "manager" | "admin") =>
-                          setNewUser((prev) => ({ ...prev, role: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="employee">Employee</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button type="submit" className="w-full">
-                      Create User
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* User List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Existing Users ({users.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {users.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center justify-between p-3 border border-border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{user.email}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                            <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
-                          </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={user.role === "admin" && users.filter((u) => u.role === "admin").length === 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <UserManagement />
           </TabsContent>
 
           {/* Employee Data Management Tab */}

@@ -135,6 +135,18 @@ class ApiClient {
     })
   }
 
+  async deactivateUser(userId: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>(`/users/${userId}/deactivate`, {
+      method: 'PATCH',
+    })
+  }
+
+  async activateUser(userId: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>(`/users/${userId}/activate`, {
+      method: 'PATCH',
+    })
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     return this.makeRequest<{ status: string }>('/health')

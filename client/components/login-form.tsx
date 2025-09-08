@@ -23,27 +23,16 @@ export function LoginForm() {
       return
     }
 
-    console.log('Attempting login with:', { username, role: 'unknown' })
     const result = await login({ username, password })
     
     if (result.success && result.user) {
-      console.log('Login successful, user data:', result.user)
-      
-      // Debug alert to see what we get
-      alert(`Login successful! User: ${result.user.username}, Role: ${result.user.role}`)
-      
       // Redirect based on role
       if (result.user.role === "admin") {
-        console.log('Redirecting to admin panel')
         router.push("/admin")
       } else {
         // All non-admin users (hr, manager, employee) go to chat
-        console.log('Redirecting to chat page, user role:', result.user.role)
         router.push("/chat")
       }
-    } else {
-      console.log('Login failed')
-      alert('Login failed!')
     }
   }
 

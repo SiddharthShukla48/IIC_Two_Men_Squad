@@ -34,7 +34,6 @@ def init_db():
         if not admin_user:
             # Create default admin user
             admin_user = User(
-                id=uuid.uuid4(),
                 username="admin",
                 password_hash=get_password_hash("admin123"),  # Change this password!
                 role=UserRole.ADMIN,

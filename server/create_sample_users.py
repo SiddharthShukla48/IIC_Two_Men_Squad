@@ -50,7 +50,6 @@ def create_sample_users():
             
             if not existing_user:
                 new_user = User(
-                    id=uuid.uuid4(),
                     username=user_data["username"],
                     password_hash=get_password_hash(user_data["password"]),
                     role=user_data["role"],

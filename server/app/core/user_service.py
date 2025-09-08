@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
+import uuid
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.auth import get_password_hash, verify_password
@@ -7,6 +8,9 @@ from app.core.auth import get_password_hash, verify_password
 
 def get_user(db: Session, user_id: str) -> Optional[User]:
     """Get user by ID."""
+    # Ensure user_id is a string
+    if isinstance(user_id, uuid.UUID):
+        user_id = str(user_id)
     return db.query(User).filter(User.id == user_id).first()
 
 
@@ -37,6 +41,9 @@ def create_user(db: Session, user: UserCreate) -> User:
 
 def update_user(db: Session, user_id: str, user_update: UserUpdate) -> Optional[User]:
     """Update user information."""
+    # Ensure user_id is a string
+    if isinstance(user_id, uuid.UUID):
+        user_id = str(user_id)
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
         update_data = user_update.dict(exclude_unset=True)
@@ -51,11 +58,40 @@ def update_user(db: Session, user_id: str, user_update: UserUpdate) -> Optional[
     return db_user
 
 
-def delete_user(db: Session, user_id: str) -> bool:
-    """Soft delete user (set is_active to False)."""
+def deactivate_user(db: Session, user_id: str) -> bool:
+    """Deactivate user (set is_active to False) - reversible."""
+    # Ensure user_id is a string
+    if isinstance(user_id, uuid.UUID):
+        user_id = str(user_id)
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
         db_user.is_active = False
+        db.commit()
+        return True
+    return False
+
+
+def activate_user(db: Session, user_id: str) -> bool:
+    """Activate user (set is_active to True)."""
+    # Ensure user_id is a string
+    if isinstance(user_id, uuid.UUID):
+        user_id = str(user_id)
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        db_user.is_active = True
+        db.commit()
+        return True
+    return False
+
+
+def delete_user(db: Session, user_id: str) -> bool:
+    """Hard delete user (permanently remove from database)."""
+    # Ensure user_id is a string
+    if isinstance(user_id, uuid.UUID):
+        user_id = str(user_id)
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        db.delete(db_user)
         db.commit()
         return True
     return False
