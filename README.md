@@ -19,9 +19,9 @@ Organizations generate and store vast amounts of employee information across Adm
 ┌─────────────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
 │  Frontend (Next.js) │───▶│  Backend (FastAPI)   │───▶│  Vector Database    │
 │                     │    │                      │    │    (ChromaDB)       │
-│ • Chat Interface    │    │ • Authentication     │    │                     │
+│ • Chat Interface    │    │ • Authentication     │    │ • Semantic Search   │ 
 │ • Role Management   │    │ • Multi-Agent RAG    │    │ • Document Storage  │
-│ • Real-time UI      │    │ • API Endpoints      │    │ • Semantic Search   │
+│ • Real-time UI      │    │ • API Endpoints      │    │ • Neural Re-Ranker  │
 └─────────────────────┘    └──────────────────────┘    └─────────────────────┘
                                       │
                                       ▼
