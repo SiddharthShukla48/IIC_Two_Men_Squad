@@ -17,7 +17,7 @@ Organizations generate and store vast amounts of employee information across Adm
 
 ```
 ┌─────────────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
-│   Frontend (Next.js) │───▶│  Backend (FastAPI)   │───▶│  Vector Database    │
+│  Frontend (Next.js) │───▶│  Backend (FastAPI)   │───▶│  Vector Database    │
 │                     │    │                      │    │    (ChromaDB)       │
 │ • Chat Interface    │    │ • Authentication     │    │                     │
 │ • Role Management   │    │ • Multi-Agent RAG    │    │ • Document Storage  │
@@ -25,13 +25,13 @@ Organizations generate and store vast amounts of employee information across Adm
 └─────────────────────┘    └──────────────────────┘    └─────────────────────┘
                                       │
                                       ▼
-                           ┌──────────────────────┐
-                           │   Local LLM (Ollama) │
-                           │                      │
-                           │ • llama3.2:1b        │
-                           │ • Offline Processing │
+                           ┌──────────────────────-┐
+                           │   Local LLM (Ollama)  │
+                           │                       │
+                           │ • llama3.2:1b         │
+                           │ • Offline Processing  │
                            │ • No Internet Required│
-                           └──────────────────────┘
+                           └──────────────────────-┘
 ```
 
 ## ✨ Key Features
@@ -53,6 +53,7 @@ Organizations generate and store vast amounts of employee information across Adm
 - **CSV Support**: Handles policy and project data from CSV files
 - **PDF Processing**: Extracts and indexes content from policy documents
 - **ChromaDB Integration**: Efficient vector database for semantic search
+- **Neural Re-Ranker (Cross-Encoder)**: Includes an neural cross-encoder re-ranker that refines retrieval by reordering ChromaDB’s top-K results.
 
 ### 🌐 Web Interface
 - **Modern UI**: Built with Next.js and Tailwind CSS
@@ -89,6 +90,7 @@ Organizations generate and store vast amounts of employee information across Adm
 - **Vector Embeddings**: Ollama embeddings
 - **Document Processing**: LangChain document loaders
 - **Semantic Search**: ChromaDB vector similarity search
+- **Neural Re-Ranker (Cross-Encoder — Offline Neural Network)**: 
 
 ## 📁 Project Structure
 
@@ -392,118 +394,9 @@ EXPOSE 8000
 CMD ["uv", "run", "python", "start_stable_server.py"]
 ```
 
-## 🤝 Contributing
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes** and add tests
-4. **Commit your changes**: `git commit -m 'Add amazing feature'`
-5. **Push to the branch**: `git push origin feature/amazing-feature`
-6. **Open a Pull Request**
-
-### Development Guidelines
-- Follow PEP 8 for Python code
-- Use TypeScript for frontend development  
-- Write tests for new features
-- Update documentation for API changes
-- Ensure offline functionality is maintained
-
-## 📝 API Documentation
-
-### Authentication Endpoints
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/refresh` - Token refresh
-- `GET /api/auth/me` - Current user information
-
-### Chat Endpoints
-- `POST /api/chat/multi-agent` - Multi-agent chat processing
-- `GET /api/chat/sessions` - Chat session history
-- `DELETE /api/chat/sessions/{id}` - Delete chat session
-
-### User Management Endpoints (Admin only)
-- `GET /api/users/` - List all users
-- `POST /api/users/` - Create new user
-- `PUT /api/users/{id}` - Update user
-- `DELETE /api/users/{id}` - Delete user
-
-Full API documentation available at `http://localhost:8000/docs` when running the server.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Ollama Connection Issues
-```bash
-# Check if Ollama is running
-ps aux | grep ollama
-
-# Restart Ollama service
-ollama serve
-
-# Test model availability
-ollama list
-```
-
-#### Database Issues
-```bash
-# Reset database
-rm server/iic_auth.db
-uv run python init_db.py
-uv run python create_sample_users.py
-```
-
-#### ChromaDB Issues
-```bash
-# Reset vector database
-rm -rf server/db/
-# Restart server to reinitialize
-```
-
-### Performance Optimization
-- Use faster Ollama models for better response times
-- Implement query caching for frequent requests
-- Optimize vector database indexing
-- Use connection pooling for database access
-
-## 📊 Performance Metrics
-
-### Response Times (Average)
-- **Simple Employee Queries**: 2-3 seconds
-- **Complex Policy Questions**: 3-5 seconds  
-- **Multi-step Organizational Queries**: 4-6 seconds
-
-### System Requirements
-- **Minimum RAM**: 8GB (16GB recommended)
-- **Storage**: 5GB for models and data
-- **CPU**: Multi-core processor recommended for concurrent users
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- [ ] **Advanced Analytics**: Query analytics and usage patterns
-- [ ] **Document Upload**: Web interface for document management
-- [ ] **Multi-language Support**: Support for multiple languages
-- [ ] **Advanced RBAC**: Granular permission system
-- [ ] **Audit Logging**: Comprehensive audit trails
-- [ ] **Mobile App**: React Native mobile application
-- [ ] **SSO Integration**: Single Sign-On support
-- [ ] **Backup/Restore**: Automated backup system
-
-### AI Improvements
-- [ ] **Model Fine-tuning**: Organization-specific model training
-- [ ] **Intent Recognition**: Better query understanding
-- [ ] **Conversation Memory**: Context-aware conversations
-- [ ] **Sentiment Analysis**: Employee satisfaction monitoring
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Team
-
-**Two Men Squad**
-- Lead Developer: Full-stack development and AI integration
-- Systems Architect: Backend architecture and security implementation
 
 ## 🙏 Acknowledgments
 
